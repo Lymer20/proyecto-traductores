@@ -55,3 +55,4 @@ def analizar_vehiculo(km, año, ruido, uso):
     print("------------------------------------------------")
 
 analizar_vehiculo(km=150000, año=2015, ruido="Si", uso="Carretera")
+analizar_vehiculo(km=300000, año=2022, ruido="No", uso="Ciudad")
