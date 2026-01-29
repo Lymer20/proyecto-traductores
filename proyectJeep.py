@@ -54,4 +54,4 @@ def analizar_vehiculo(km, año, ruido, uso):
     print(f"Certeza del modelo: {probabilidad:.1f}%")
     print("------------------------------------------------")
 
-analizar_vehiculo(km=120000, año=2015, ruido="Si", uso="Carretera")
+analizar_vehiculo(km=150000, año=2015, ruido="Si", uso="Carretera")
