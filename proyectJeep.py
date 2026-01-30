@@ -136,8 +136,9 @@ def analizar_vehiculo_completo(marca, modelo_auto, año, km, uso, motor, tren, c
     else:
         resultado = "🔴 RIESGO CRÍTICO (CORTO PLAZO). Alta probabilidad de falla inminente."
         
+    print(f"Estado Motor: {motor} | Caja: {caja}")
     print(f"Diagnóstico IA: {resultado}")
-    print(f"Certeza del modelo: {probabilidad:.1f}%")
+    print(f"Certeza: {probabilidad:.1f}%")
     print("------------------------------------------------")
 
 # Caso A: Un Toyota Corolla (La API dirá que es Automático/Manual y sus cilindros)
