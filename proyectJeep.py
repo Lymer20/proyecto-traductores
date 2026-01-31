@@ -9,17 +9,96 @@ from sklearn.preprocessing import LabelEncoder
 API_KEY = 'iQ0EBCDsliXHWxOTfihUQj1W904h6XBunQQHhrMl'
 HEADERS = {'X-Api-Key': API_KEY}
 
-# Datos de los cuales, el modelo interpretará y aprenderá al usar números, gracias a LabelEncoder
 data = {
-    'kilometraje': [15000, 120000, 45000, 200000, 80000, 30000],
-    'año_vehiculo': [2022, 2015, 2019, 2010, 2017, 2021],
-    'transmision': ['a', 'm', 'a', 'm', 'a', 'm'],
-    'cilindros': [4, 4, 6, 8, 4, 3],
-    'estado_motor': ['Normal', 'Fuga Aceite', 'Normal', 'Sobrecalentamiento', 'Ruido Valvulas', 'Normal'],
-    'estado_tren': ['Alineado', 'Desgaste', 'Alineado', 'Holgura', 'Ruidos', 'Alineado'],
-    'estado_caja': ['Suave', 'Golpes', 'Suave', 'Deslizamiento', 'Suave', 'Suave'],
-    'uso': ['Ciudad', 'Carretera', 'Mixto', 'Ciudad', 'Ciudad', 'Carretera'],
-    'estado_riesgo': [0, 2, 0, 2, 1, 0] 
+    'kilometraje': [
+        # --- AUTOS NUEVOS Y SEMI-NUEVOS ---
+        5000, 15000, 30000, 45000, 
+        # --- USO PROMEDIO ---
+        80000, 120000, 150000, 
+        # --- ALTO KILOMETRAJE / TAXIS ---
+        200000, 250000, 180000,
+        # --- VETERANOS / CLÁSICOS ---
+        350000, 400000, 90000, 500000, 10000,
+        # --- CASOS CONTRADICTORIOS (NUEVOS) ---
+        300000, 20000 
+    ],
+    
+    'año_vehiculo': [
+        # --- RECIENTES ---
+        2025, 2024, 2023, 2022, 
+        # --- MEDIA VIDA ---
+        2018, 2015, 2014, 
+        # --- VIEJOS PERO FUNCIONALES ---
+        2010, 2008, 2023,
+        # --- ANTIGUOS ---
+        1998, 1995, 1990, 1985, 2000,
+        # --- CASOS CONTRADICTORIOS (NUEVOS) ---
+        2005, 2024
+    ],
+
+    'transmision': [
+        'a', 'a', 'm', 'a',   
+        'a', 'm', 'a',        
+        'm', 'a', 'a',        
+        'm', 'm', 'a', 'm', 'a',
+        # --- CASOS CONTRADICTORIOS ---
+        'm', 'a'
+    ],
+
+    'cilindros': [
+        4, 4, 3, 6,           
+        4, 4, 6,              
+        8, 6, 4,              
+        8, 6, 8, 8, 4,
+        # --- CASOS CONTRADICTORIOS ---
+        4, 4
+    ],
+
+    'estado_motor': [
+        'Normal', 'Normal', 'Normal', 'Normal',
+        'Ruido Valvulas', 'Fuga Aceite', 'Normal',
+        'Sobrecalentamiento', 'Fuga Aceite', 'Ruido Valvulas',
+        'Fuga Aceite', 'Sobrecalentamiento', 'Normal', 'Ruido Valvulas', 'Normal',
+        # --- CORREGIDO: CASOS INCOHERENTES ---
+        'Fuga Aceite', 'Normal' # Vehículo 300k: dañado, Vehículo 20k: sano
+    ],
+
+    'estado_tren': [
+        'Alineado', 'Alineado', 'Alineado', 'Alineado',
+        'Desgaste', 'Desgaste', 'Holgura',
+        'Holgura', 'Ruidos', 'Desgaste',
+        'Ruidos', 'Holgura', 'Alineado', 'Ruidos', 'Desgaste',
+        # --- CORREGIDO: CASOS INCOHERENTES ---
+        'Holgura', 'Alineado' # Vehículo 300k: holgura, Vehículo 20k: alineado
+    ],
+
+    'estado_caja': [
+        'Suave', 'Suave', 'Suave', 'Suave',
+        'Suave', 'Golpes', 'Deslizamiento',
+        'Deslizamiento', 'Golpes', 'Suave',
+        'Golpes', 'Deslizamiento', 'Suave', 'Golpes', 'Suave',
+        # --- CORREGIDO: CASOS INCOHERENTES ---
+        'Deslizamiento', 'Suave' # Vehículo 300k: deslizamiento, Vehículo 20k: suave
+    ],
+
+    'uso': [
+        'Ciudad', 'Carretera', 'Mixto', 'Ciudad',
+        'Ciudad', 'Carretera', 'Mixto',
+        'Ciudad', 'Ciudad', 'Ciudad',
+        'Mixto', 'Carretera', 'Ciudad', 'Carretera', 'Ciudad',
+        # --- CASOS CONTRADICTORIOS ---
+        'Carretera', 'Ciudad'
+    ],
+
+    # 0: Sano, 1: Alerta, 2: Crítico
+    'estado_riesgo': [
+        0, 0, 0, 0,       
+        1, 2, 1,          
+        2, 2, 2,          
+        2, 2, 0, 2, 1,
+        # --- CORREGIDO: CASOS INCOHERENTES ---
+        2, 0 # Vehículo 300k: CRÍTICO, Vehículo 20k: SANO
+    ]
 }
 # Convertimos a DataFrame (tabla)
 df = pd.DataFrame(data)
@@ -40,7 +119,7 @@ df['transmision_n'] = le_trans.fit_transform(df['transmision'])
 X = df[['kilometraje', 'año_vehiculo', 'cilindros', 'transmision_n', 'estado_motor_n', 'estado_tren_n', 'estado_caja_n', 'uso_n']]
 y = df['estado_riesgo']
 
-modelo = RandomForestClassifier(n_estimators=100, random_state=42)
+modelo = RandomForestClassifier(n_estimators=100, max_depth=3, min_samples_leaf=2, random_state=42)
 modelo.fit(X, y)
 
 def buscar_sugerencias(tipo, valor, marca_filtro=None, modelo_filtro=None):
