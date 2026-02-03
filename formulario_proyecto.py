@@ -122,4 +122,4 @@ class QuestionsApp(tk.Tk):
         self.main_frame.pack(fill=tk.BOTH, expand=True)
 
 if __name__ == "__main__":
-    QuestionsApp().mainloop()
+    QuestionsApp().mainloop()g
