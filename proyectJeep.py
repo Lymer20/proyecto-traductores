@@ -1,5 +1,4 @@
 # Importación de modulos necesarios para el modelo de IA
-
 import pandas as pd
 import requests
 from sklearn.ensemble import RandomForestClassifier
@@ -9,7 +8,7 @@ from sklearn.preprocessing import LabelEncoder
 API_KEY = 'iQ0EBCDsliXHWxOTfihUQj1W904h6XBunQQHhrMl'
 HEADERS = {'X-Api-Key': API_KEY}
 
-# Datos de los cuales, el modelo interpretará y aprenderá al usar números, gracias a LabelEncoder
+# Datos de entrenamiento
 data = {
     'kilometraje': [15000, 120000, 45000, 200000, 80000, 30000],
     'año_vehiculo': [2022, 2015, 2019, 2010, 2017, 2021],
@@ -21,22 +20,17 @@ data = {
     'uso': ['Ciudad', 'Carretera', 'Mixto', 'Ciudad', 'Ciudad', 'Carretera'],
     'estado_riesgo': [0, 2, 0, 2, 1, 0] 
 }
-# Convertimos a DataFrame (tabla)
 df = pd.DataFrame(data)
 
-le_uso = LabelEncoder(); 
-le_motor = LabelEncoder(); 
-le_tren = LabelEncoder()
-le_caja = LabelEncoder(); 
-le_trans = LabelEncoder()
+le_uso = LabelEncoder(); le_motor = LabelEncoder(); le_tren = LabelEncoder()
+le_caja = LabelEncoder(); le_trans = LabelEncoder()
 
 df['estado_motor_n'] = le_motor.fit_transform(df['estado_motor'])
 df['estado_tren_n'] = le_tren.fit_transform(df['estado_tren'])
 df['estado_caja_n'] = le_caja.fit_transform(df['estado_caja'])
-df['uso_n'] = le_uso.fit_transform(df['uso']) # Ciudad=0, Carretera=1, etc.
+df['uso_n'] = le_uso.fit_transform(df['uso'])
 df['transmision_n'] = le_trans.fit_transform(df['transmision'])
 
-# Definimos X (Datos de entrada) e y (Resultado esperado)
 X = df[['kilometraje', 'año_vehiculo', 'cilindros', 'transmision_n', 'estado_motor_n', 'estado_tren_n', 'estado_caja_n', 'uso_n']]
 y = df['estado_riesgo']
 
@@ -44,26 +38,17 @@ modelo = RandomForestClassifier(n_estimators=100, random_state=42)
 modelo.fit(X, y)
 
 def buscar_sugerencias(tipo, valor, marca_filtro=None, modelo_filtro=None):
-    """Consulta la API para Marcas, Modelos o Años"""
     params = {tipo: valor}
-    
     if marca_filtro: params['make'] = marca_filtro
     if modelo_filtro: params['model'] = modelo_filtro
-
     try:
         res = requests.get('https://api.api-ninjas.com/v1/cars', headers=HEADERS, params=params, timeout=2)
-        
         if res.status_code == 200:
             datos = res.json()
-            # Si el tipo es 'year', extraemos el campo 'year' de la respuesta
             key = tipo 
-            
-            # Extraer, convertir a string (para el Combobox), eliminar duplicados y ordenar descendente
             resultados = sorted(list(set([str(c.get(key)) for c in datos])), reverse=True)
-            
-            return resultados[:5] # Retornamos los 5 años más recientes encontrados
-    except:
-        pass
+            return resultados[:5]
+    except: pass
     return []
 
 def analizar_vehiculo_completo(marca, modelo_auto, año, km, uso, motor, tren, caja):
@@ -78,14 +63,11 @@ def analizar_vehiculo_completo(marca, modelo_auto, año, km, uso, motor, tren, c
             msg_api = f"✅ DATOS TÉCNICOS (API): {cilindros} Cilindros | Transmisión: {transmision.upper()}"
         else:
             cilindros, transmision = 4, 'a'
-            msg_api = "⚠️ DATOS TÉCNICOS: No encontrados, usando estándar. \n" \
-            "4 Cilindros | Transmisión: Auto"
+            msg_api = "⚠️ DATOS TÉCNICOS: No encontrados, usando estándar. \n4 Cilindros | Transmisión: Auto"
     except:
         cilindros, transmision = 4, 'a'
-        msg_api = "🌐 DATOS TÉCNICOS: Sin conexión, usando estándar. \n" \
-        "4 Cilindros | Transmisión: Auto"
+        msg_api = "🌐 DATOS TÉCNICOS: Sin conexión, usando estándar. \n4 Cilindros | Transmisión: Auto"
 
-    # --- Lógica de predicción ---
     uso_val = le_uso.transform([uso])[0]
     motor_val = le_motor.transform([motor])[0]
     tren_val = le_tren.transform([tren])[0]
@@ -98,12 +80,11 @@ def analizar_vehiculo_completo(marca, modelo_auto, año, km, uso, motor, tren, c
     prob = modelo.predict_proba(datos_entrada).max() * 100
     
     diag = [
-        "🟢 ESTADO SALUDABLE. Mantenimiento preventivo normal \n a largo plazo.",
-        "🟡 ALERTA MEDIA. Se detectan patrones de desgaste. Revisión recomendada a mediano plazo.", 
+        "🟢 ESTADO SALUDABLE. Mantenimiento preventivo normal.",
+        "🟡 ALERTA MEDIA. Se detectan patrones de desgaste.", 
         "🔴 RIESGO CRÍTICO. Alta probabilidad de falla inminente."
     ][prediccion]
     
-    # --- CONSTRUCCIÓN DEL RESUMEN FINAL ---
     resumen_usuario = (
         f"📋 RESUMEN DEL VEHÍCULO:\n"
         f"• Vehículo: {marca.upper()} {modelo_auto.upper()} ({año})\n"
@@ -121,5 +102,8 @@ def analizar_vehiculo_completo(marca, modelo_auto, año, km, uso, motor, tren, c
         f"🎯 Certeza del análisis: {prob:.1f}%"
     )
     
-    return resumen_usuario
+    colores = ["green", "#CC9900", "red"] 
+    color_resultado = colores[prediccion]
 
+    # Retornamos los 3 valores necesarios
+    return resumen_usuario, diag, color_resultado

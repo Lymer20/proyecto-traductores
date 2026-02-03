@@ -10,7 +10,7 @@ class QuestionsApp(tk.Tk):
         self.configure(bg="#f0f0f0")
         
         self.inputs = {}
-        self.timer = None # Para no saturar la API al escribir
+        self.timer = None 
         
         self.main_frame = ttk.Frame(self, padding="30")
         self.main_frame.pack(fill=tk.BOTH, expand=True)
@@ -27,8 +27,6 @@ class QuestionsApp(tk.Tk):
         self.geometry(f"{ancho}x{alto}+{x}+{y}")
 
     def create_widgets(self):
-         # --- PANTALLA DE FORMULARIO ---
-
         tk.Label(self.main_frame, text="INTELIGENCIA ARTIFICIAL PARA \n DETECCIÓN DE FALLAS DEL AUTOMÓVIL",
                  font=("Segoe UI", 20, "bold")).pack(pady=(0, 20))
         
@@ -54,10 +52,8 @@ class QuestionsApp(tk.Tk):
             
             if tipo == "text":
                 if label == "Kilometraje:":
-                    # Usamos Entry simple para el Kilometraje
                     w = ttk.Entry(cell, font=("Segoe UI", 11))
                 else:
-                    # Usamos Combobox para poder mostrar sugerencias mientras escriben
                     w = ttk.Combobox(cell, font=("Segoe UI", 11))
                     if label == "Marca:":
                         w.bind('<KeyRelease>', lambda e: self.agendar_sugerencia(e, "make"))
@@ -76,51 +72,48 @@ class QuestionsApp(tk.Tk):
                    activebackground="#27ae60").pack(pady=20, fill=tk.X, padx=300)
 
     def agendar_sugerencia(self, event, tipo):
-        # Espera a que el usuario deje de escribir para consultar la API
         if self.timer: self.after_cancel(self.timer)
         self.timer = self.after(500, lambda: self.obtener_sugerencias(event.widget, tipo))
 
     def obtener_sugerencias(self, widget, tipo):
         val = widget.get().strip()
-        if len(val) < 2: return # Evitamos búsquedas con 1 sola letra
-        
+        if len(val) < 2: return
         marca_actual = self.inputs["Marca:"].get().strip()
         modelo_actual = self.inputs["Modelo del Auto:"].get().strip()
-        
-        # Lógica de filtros cruzados
         m_filtro = marca_actual if tipo in ["model", "year"] else None
         mod_filtro = modelo_actual if tipo == "year" else None
-        
-        # Llamada a la API 
         sugerencias = ia.buscar_sugerencias(tipo, val, m_filtro, mod_filtro)
-        
         if sugerencias:
             widget['values'] = sugerencias
             widget.event_generate('<Down>')
 
     def submit_action(self):
         try:
-            res = ia.analizar_vehiculo_completo(
+            # Ahora recibimos 3 valores de la función
+            resumen, diag, color = ia.analizar_vehiculo_completo(
                 self.inputs["Marca:"].get(), self.inputs["Modelo del Auto:"].get(),
                 int(self.inputs["Año:"].get()), int(self.inputs["Kilometraje:"].get()),
                 self.inputs["Uso del vehículo"].get(), self.inputs["Estado del motor:"].get(),
                 self.inputs["Estado del Tren Delantero:"].get(), self.inputs["Estado de la Caja:"].get()
             )
-            self.mostrar_resultados(res)
+            self.mostrar_resultados(resumen, color)
         except:
             messagebox.showerror("Error", "Verifica haber llenado todos los campos")
 
-    def mostrar_resultados(self, texto):
+    def mostrar_resultados(self, texto, color_ia):
         self.main_frame.pack_forget()
         self.result_frame.pack(fill=tk.BOTH, expand=True, padx=40, pady=40)
         for w in self.result_frame.winfo_children(): w.destroy()
         
         tk.Label(self.result_frame, text="DIAGNÓSTICO DE LA IA", font=("Segoe UI", 24, "bold")).pack(pady=10)
+        
+        # Se aplica el color_ia al parámetro fg (foreground/color de letra)
         tk.Label(self.result_frame, text=texto, font=("Consolas", 12), bg="white", relief="solid", 
-                 padx=20, pady=20, wraplength=500).pack(expand=True, fill=tk.BOTH)
+                 fg=color_ia, padx=20, pady=20, wraplength=500).pack(expand=True, fill=tk.BOTH)
         
         tk.Button(self.result_frame, text="NUEVO ANÁLISIS", command=self.volver, bg="#3498db", fg="white",
                   font=("Segoe UI", 11, "bold"), relief="flat", height=2).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=10, pady=10)
+        
         tk.Button(self.result_frame, text="SALIR", command=self.destroy, bg="#e74c3c", fg="white",
                   font=("Segoe UI", 11, "bold"), relief="flat", height=2).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=10, pady=10)
 
